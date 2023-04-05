@@ -3,6 +3,7 @@ package com.cursosandroidant.storesmvvm.mainModule
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     private fun setupViewModel() {
         mMainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
         mMainViewModel.getStores().observe(this) { stores ->
+            mBinding.progressBar.visibility = if (stores.isEmpty()) View.VISIBLE else View.GONE
             mAdapter.setStores(stores)
         }
 
@@ -120,7 +122,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
             .show()
     }
 
-    private fun confirmDelete(storeEntity: StoreEntity){
+    private fun confirmDelete(storeEntity: StoreEntity) {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.dialog_delete_title)
             .setPositiveButton(R.string.dialog_delete_confirm) { _, _ ->
@@ -130,7 +132,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
             .show()
     }
 
-    private fun dial(phone: String){
+    private fun dial(phone: String) {
         val callIntent = Intent().apply {
             action = Intent.ACTION_DIAL
             data = Uri.parse("tel:$phone")
@@ -139,8 +141,8 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         startIntent(callIntent)
     }
 
-    private fun goToWebsite(website: String){
-        if (website.isEmpty()){
+    private fun goToWebsite(website: String) {
+        if (website.isEmpty()) {
             Toast.makeText(this, R.string.main_error_no_website, Toast.LENGTH_LONG).show()
         } else {
             val websiteIntent = Intent().apply {
@@ -152,7 +154,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         }
     }
 
-    private fun startIntent(intent: Intent){
+    private fun startIntent(intent: Intent) {
         if (intent.resolveActivity(packageManager) != null)
             startActivity(intent)
         else

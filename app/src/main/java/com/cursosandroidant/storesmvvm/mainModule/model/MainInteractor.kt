@@ -1,7 +1,17 @@
 package com.cursosandroidant.storesmvvm.mainModule.model
 
+import android.util.Log
+import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
 import com.cursosandroidant.storesmvvm.StoreApplication
 import com.cursosandroidant.storesmvvm.common.entities.StoreEntity
+import com.cursosandroidant.storesmvvm.common.utils.Constants.GET_ALL_PATH
+import com.cursosandroidant.storesmvvm.common.utils.Constants.STATUS_PROPERTY
+import com.cursosandroidant.storesmvvm.common.utils.Constants.STORES_PROPERTY
+import com.cursosandroidant.storesmvvm.common.utils.Constants.STORES_URL
+import com.cursosandroidant.storesmvvm.common.utils.Constants.SUCCESS
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.util.concurrent.LinkedBlockingQueue
 
 /****
@@ -20,27 +30,50 @@ import java.util.concurrent.LinkedBlockingQueue
  ***/
 class MainInteractor {
 
-    fun getStores(callback: (MutableList<StoreEntity>) -> Unit){
+    fun getStores(callback: (MutableList<StoreEntity>) -> Unit) {
+        val url = "$STORES_URL$GET_ALL_PATH"
+        val jsonObjectRequest = JsonObjectRequest(Request.Method.GET, url, null,
+            { response ->
+                Log.i("Response", response.toString())
+
+                val status = response.getInt(STATUS_PROPERTY)
+                if (status == SUCCESS) {
+                    val jsonList = response.getJSONArray(STORES_PROPERTY).toString()
+                    val mutableListType = object : TypeToken<MutableList<StoreEntity>>(){}.type
+                    val storeList = Gson().fromJson<MutableList<StoreEntity>>(jsonList, mutableListType)
+
+                    callback(storeList)
+                }
+            },
+            {
+                it.printStackTrace()
+            })
+        StoreApplication.storeApi.addToRequestQueue(jsonObjectRequest)
+    }
+
+    fun getStoresRoom(callback: (MutableList<StoreEntity>) -> Unit) {
         val queue = LinkedBlockingQueue<MutableList<StoreEntity>>()
-        Thread{
+        Thread {
             val storeList = StoreApplication.database.storeDao().getAllStores()
+            val json = Gson().toJson(storeList)
+            Log.i("Gson", json)
             queue.add(storeList)
         }.start()
         callback(queue.take())
     }
 
-    fun deleteStore(storeEntity: StoreEntity, callback: (StoreEntity) -> Unit){
+    fun deleteStore(storeEntity: StoreEntity, callback: (StoreEntity) -> Unit) {
         val queue = LinkedBlockingQueue<StoreEntity>()
-        Thread{
+        Thread {
             StoreApplication.database.storeDao().deleteStore(storeEntity)
             queue.add(storeEntity)
         }.start()
         callback(queue.take())
     }
 
-    fun updateStore(storeEntity: StoreEntity, callback: (StoreEntity) -> Unit){
+    fun updateStore(storeEntity: StoreEntity, callback: (StoreEntity) -> Unit) {
         val queue = LinkedBlockingQueue<StoreEntity>()
-        Thread{
+        Thread {
             StoreApplication.database.storeDao().updateStore(storeEntity)
             queue.add(storeEntity)
         }.start()
