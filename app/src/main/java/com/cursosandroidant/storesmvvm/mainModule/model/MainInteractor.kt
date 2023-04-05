@@ -5,11 +5,13 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.cursosandroidant.storesmvvm.StoreApplication
 import com.cursosandroidant.storesmvvm.common.entities.StoreEntity
+import com.cursosandroidant.storesmvvm.common.utils.Constants.ERROR
 import com.cursosandroidant.storesmvvm.common.utils.Constants.GET_ALL_PATH
 import com.cursosandroidant.storesmvvm.common.utils.Constants.STATUS_PROPERTY
 import com.cursosandroidant.storesmvvm.common.utils.Constants.STORES_PROPERTY
 import com.cursosandroidant.storesmvvm.common.utils.Constants.STORES_URL
 import com.cursosandroidant.storesmvvm.common.utils.Constants.SUCCESS
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.concurrent.LinkedBlockingQueue
@@ -32,21 +34,23 @@ class MainInteractor {
 
     fun getStores(callback: (MutableList<StoreEntity>) -> Unit) {
         val url = "$STORES_URL$GET_ALL_PATH"
+        var storeList = mutableListOf<StoreEntity>()
         val jsonObjectRequest = JsonObjectRequest(Request.Method.GET, url, null,
             { response ->
-                Log.i("Response", response.toString())
+                val status = response.optInt(STATUS_PROPERTY, ERROR)
 
-                val status = response.getInt(STATUS_PROPERTY)
                 if (status == SUCCESS) {
-                    val jsonList = response.getJSONArray(STORES_PROPERTY).toString()
-                    val mutableListType = object : TypeToken<MutableList<StoreEntity>>(){}.type
-                    val storeList = Gson().fromJson<MutableList<StoreEntity>>(jsonList, mutableListType)
-
-                    callback(storeList)
+                    val jsonList = response.optJSONArray(STORES_PROPERTY)?.toString()
+                    jsonList.let {
+                        val mutableListType = object : TypeToken<MutableList<StoreEntity>>(){}.type
+                        storeList = Gson().fromJson(jsonList, mutableListType)
+                    }
                 }
+                callback(storeList)
             },
             {
                 it.printStackTrace()
+                callback(storeList)
             })
         StoreApplication.storeApi.addToRequestQueue(jsonObjectRequest)
     }
